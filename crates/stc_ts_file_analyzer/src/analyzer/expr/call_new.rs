@@ -111,11 +111,21 @@ impl Analyzer<'_, '_> {
             }
             RCallee::Expr(callee) => callee,
             RCallee::Import(..) => {
+                let validated_args = self.validate_args(args).report(&mut self.storage);
+
+                if let Some(a) = validated_args {
+                    if let [TypeOrSpread { ty, .. }] = a.as_slice() {
+                        if ty.is_str_like() {
+                            return Ok(Type::any(span, Default::default()));
+                        }
+                    }
+                }
+
                 return Err(ErrorKind::Unimplemented {
                     span: e.span,
                     msg: "validation of dynamic import".to_string(),
                 }
-                .into())
+                .into());
             }
         };
 
